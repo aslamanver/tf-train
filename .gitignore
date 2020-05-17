@@ -1,0 +1,11 @@
+*
+!scripts/
+!scripts/**/*
+
+!main.py
+!requirements.txt
+!Dockerfile
+!.dockerignore
+!.gitignore
+!.gitattributes
+!README.md

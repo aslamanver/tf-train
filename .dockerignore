@@ -1,0 +1,5 @@
+*
+!scripts/
+!models/
+!main.py
+!requirements.txt
