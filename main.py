@@ -34,10 +34,12 @@ def main():
     optional = parser.add_argument_group('optional arguments')
 
     required.add_argument("--train", help="Action [action = train]", required=True, action="store_true")
+    optional.add_argument("--tensorboard", help="Open TensorBoard", action="store_true")
     optional.add_argument("--steps", help="Training steps | Default: 500", default="500", type=int)
     optional.add_argument("--download", help="Model Download | Default: False", action="store_true")
     optional.add_argument("--arch", help="Architecture | Default: mobilenet_1.0_224", default="mobilenet_1.0_224", type=str)
     optional.add_argument("--size", help="Image Size | Default: 224", default=224, type=int)
+    optional.add_argument("--convert", help="TF-Lite Convert [FLOAT, QUANT]", type=str)
 
     args = parser.parse_args()
 
@@ -85,16 +87,42 @@ def main():
         --graph=/data/results/model.pb \
         --image=" + file
 
+    if args.tensorboard:
+        try:
+            os.system("pkill -f tensorboard")
+            print_color(Colors.YELLOW, "Tensorboard is running at http://localhost:6006")
+            os.system("tensorboard --logdir /data/training_summaries")
+        except KeyboardInterrupt:
+            pass
+        return
+
+    if args.convert:
+        if args.convert == "FLOAT":
+            print_color(Colors.YELLOW, "Converting to FLOAT model...")
+            os.system(tflite_float_script)
+        elif args.convert == "QUANT":
+            print_color(Colors.MAGENTA, "Converting to QUANTIZED_UINT8 model...")
+            os.system(tflite_quant_script)
+        else:
+            print_color(Colors.RED, "Type is not supported.")
+        return
+
     print_color(Colors.BLUE, "Step 1/5 : Preparing training data...")
     if not os.path.exists("/data/training_photos"):
         print_color(Colors.RED, "training_photos folder is not accessible.")
         sys.exit()
+
     print("Creating results folder...")
     os.system("mkdir -p /data/results")
     os.system("rm -r /data/results/*")
-    print("Copying model files from ai...")
-    os.system("mkdir -p /data/models")
-    os.system("cp -r /ai/models/* /data/models")
+
+    if args.download:
+        print("Downloading model files from Google...")
+        os.system("rm -r /data/models")
+    else:
+        print("Copying model files from ai...")
+        os.system("mkdir -p /data/models")
+        os.system("cp -r /ai/models/* /data/models")
 
     print_color(Colors.BLUE, "Step 2/5 : Starting TensorBoard...")
     os.system("pkill -f tensorboard")
@@ -109,12 +137,13 @@ def main():
 
     print_color(Colors.BLUE, "Step 4/5 : Testing model...")
     for file in glob.glob("/data/testing_photos/*.jpg"):
-        print_color(Colors.YELLOW, "\nPredicting --> " + file)
+        print_color(Colors.YELLOW, "\nPredicting... --> " + file)
         os.system(test_script(file))
 
     print_color(Colors.BLUE, "Step 5/5 : Converting TensorFlow-Lite model...")
     print_color(Colors.MAGENTA, "Converting to FLOAT model...")
     os.system(tflite_float_script)
+
     print_color(Colors.MAGENTA, "Converting to QUANTIZED_UINT8 model...")
     os.system(tflite_quant_script)
 
