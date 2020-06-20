@@ -1,0 +1,8 @@
+*
+!.gitignore
+
+!testing_photos/
+!testing_photos/**/*
+
+!training_photos/
+!training_photos/**/*
